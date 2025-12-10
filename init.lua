@@ -50,10 +50,9 @@ local state = {
 	isSideBarOpen = false,
 	files = {},
 	directories = {},
-    openDirectories = {},
+	openDirectories = {},
 	bufno = nil,
 	winno = nil,
-    lastbuf = nil,
 }
 
 ---@param filename string
@@ -92,10 +91,57 @@ local getDirInfo = function()
 	end
 end
 
+--- TODO
+---@param added table
+---@param deleted table
+local handleFSChanges = function (added, deleted)
+end 
+
 local handleBufUpdate = function()
 	local lines = vim.api.nvim_buf_get_lines(state.bufno, 0, -1, false)
 	vim.api.nvim_set_option_value("modified", false, { buf = state.bufno })
-    print(vim.inspect(lines), vim.inspect(lines))
+
+	local deleted = {}
+	local added = {}
+
+	local current_names = {}
+
+	for _, line in ipairs(lines) do
+		local name = line:gsub("^%s+", ""):gsub("/$", "")
+		current_names[name] = true
+	end
+
+	for _, file in ipairs(state.files) do
+		if not current_names[file.filename] then
+			deleted[#deleted + 1] = file.filename
+		end
+	end
+
+	for _, dir in ipairs(state.directories) do
+        print(dir.filename, current_names[dir.filename])
+		if not current_names[dir.filename] then
+			deleted[#deleted + 1] = dir.filename
+		end
+	end
+
+	local existing_names = {}
+
+	for _, file in ipairs(state.files) do
+		existing_names[file.filename] = true
+	end
+
+	for _, dir in ipairs(state.directories) do
+		existing_names[dir.filename] = true
+	end
+
+	for _, line in ipairs(lines) do
+		local name = line:gsub("^%s+", ""):gsub("/$", "")
+		if name ~= "" and not existing_names[name] then
+			added[#added + 1] = name
+		end
+	end
+
+    handleFSChanges(added, deleted)
 end
 
 local updateBuffer = function()
@@ -114,7 +160,7 @@ local updateBuffer = function()
 
 	vim.schedule(function()
 		vim.api.nvim_buf_set_lines(state.bufno, 0, -1, false, text)
-        state.lastbuf = text
+		state.lastbuf = text
 
 		local ns_id = vim.api.nvim_create_namespace("iconcol")
 
@@ -163,7 +209,6 @@ local closeSidebar = function()
 		vim.api.nvim_buf_delete(state.bufno, { force = true })
 	end
 
-
 	state.winno = nil
 	state.bufno = nil
 	state.isSideBarOpen = false
@@ -186,6 +231,7 @@ local createSidebar = function()
 	vim.api.nvim_set_option_value("buftype", "acwrite", { buf = state.bufno })
 	vim.api.nvim_set_option_value("modifiable", true, { buf = state.bufno })
 
+	print(state.bufno)
 	vim.api.nvim_create_autocmd("BufWriteCmd", {
 		buffer = state.bufno,
 		callback = function()
