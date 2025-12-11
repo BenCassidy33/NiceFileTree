@@ -3,6 +3,7 @@ M.Options = {
 	showHidden = true,
 	showIcons = true,
     maxDepth = 5,
+    gitIgnore = false,
 
 	popup_window = {
 		min_window_width = 40,
@@ -34,17 +35,19 @@ M.Options = {
 ---@field type string
 ---@field uid number
 
----@class FileInfo
----@field filepath string
----@field filename string
+---@class File
+---@field path string
+---@field name string
 ---@field extension string
 ---@field stat FileStat
+---@field bufno integer | nil
 
 ---@class Directory
 ---@field isOpen boolean
----@field children (FileInfo | Directory)[] | nil
+---@field children (File | Directory)[] | nil
 ---@field stat FileStat
 ---@field name string
+---@field path string
 
 ---@class State
 ---@field workingDirecory string

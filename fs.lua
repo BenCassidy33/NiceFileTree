@@ -1,3 +1,5 @@
+local scan = require("plenary.scandir")
+
 local async = require("plenary.async")
 local popup = require("plenary.popup")
 
@@ -5,11 +7,9 @@ local Plugin = require("plugin")
 
 local M = {}
 
-M.cacheFS = function ()
-end
+M.cacheFS = function() end
 
-M.MakeFSChanges = function(added, deleted)
-end
+M.MakeFSChanges = function(added, deleted) end
 
 M.HandleFSChanges = function(added, deleted)
 	local warning = { "Added:" }
@@ -43,7 +43,7 @@ M.HandleFSChanges = function(added, deleted)
 
 		vim.keymap.set("n", "y", function()
 			vim.api.nvim_win_close(popup_winno, true)
-            M.MakeFSChanges(added, deleted)
+			M.MakeFSChanges(added, deleted)
 		end, { silent = false, buffer = popup_bufno })
 
 		vim.keymap.set("n", "n", function()
@@ -60,38 +60,55 @@ M.GetFileInfo = function(path, filename, depth)
 	local _, fd = async.uv.fs_open(filepath, "r", 438)
 	local _, stat = async.uv.fs_fstat(fd)
 
-    if stat.type == "directory" then
-        local children = M.GetDirFiles(filepath, depth + 1)
+	if stat.type == "directory" then
+		local children = M.GetDirFiles(filepath)
 
-        ---@class Directory
-        local directory = {
-            name = filename,
-            stat = stat,
-            children = children
-        }
-
-    else
-        ---@class File
-        local file = {}
-    end
-
-
-	file_info.extension = filename:match("%.([^%.]+)$")
+		---@class Directory
+		local directory = {
+			name = filename,
+			stat = stat,
+			children = children,
+			isOpen = false,
+		}
+	else
+		---@class File
+		local file = {
+			name = filename,
+			path = filepath,
+			extension = filename:match("%.([^%.]+)$"),
+			stat = stat,
+			bufno = nil,
+		}
+	end
 
 	async.uv.fs_close(fd)
 	return file_info
 end
 
-M.GetDirFiles = function(dirpath, depth)
-    if depth >= Plugin.Options.maxDepth then
-        return nil
-    end
+M.GetDirFiles = function(dirpath)
+    local files = scan.scan_dir(dirpath, {
+        hidden = Plugin.Options.showHidden,
+        add_dirs = true,
+        respect_gitignore = Plugin.Options.gitIgnore,
+        depth = Plugin.maxDepth,
+        on_insert = function (entry)
+            print("ENTRY: ", vim.inspect(entry))
+        end,
 
-	local files = vim.fn.readdir(dirpath)
+    })
 
-    for _, filename in ipairs(files) do
-        local info = M.GetFileInfo(dirpath, filename, 0)
-    end
+    print(vim.inspect(files))
+
+	-- if depth >= Plugin.Options.maxDepth then
+	-- 	return nil
+	-- end
+	--
+	-- local files = vim.fn.readdir(dirpath)
+	--
+	-- for _, filename in ipairs(files) do
+	-- 	local info = M.GetFileInfo(dirpath, filename, 0)
+	-- 	print(vim.inspect(info))
+	-- end
 
 	-- for _, filename in ipairs(files) do
 	-- 	local file_info = M.GetFileInfo(filename)

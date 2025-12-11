@@ -52,7 +52,6 @@ local handleBufUpdate = function()
 	Fs.HandleFSChanges(added, deleted)
 end
 
-
 local closeSidebar = function()
 	if not Plugin.state.bufno and not Plugin.state.winno then
 		return
@@ -97,11 +96,10 @@ local createSidebar = function()
 		end,
 	})
 
-    -- TODO: disply folders recusrively
-    vim.keymap.set("n", "<CR>", function ()
-        local filename = vim.api.nvim_get_current_line()
-
-    end, { silent = true })
+	-- TODO: display folders recursively
+	vim.keymap.set("n", "<CR>", function()
+		local filename = vim.api.nvim_get_current_line()
+	end, { silent = true })
 end
 
 local sidebar = function(toggle_type)
